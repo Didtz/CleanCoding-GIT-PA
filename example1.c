@@ -1,155 +1,154 @@
 #define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef struct Node 
+typedef struct Node
 {
-	int data;
-	struct Node* next;
-} NODE;
-/// pentru simplitate, folosim int uri pt a numi restaurantel/locatiile
-/// ex: 1 - restaurantul 1 si tot asa    
+    int data;
+    struct Node* next;
+} Node;
 
-
-
-
-typedef struct g
+typedef struct Graph
 {
-	int v;
-	int* vis;
-	struct Node** alst;
-} GPH;
+    int nNumVertices;
+    int* visited;
+    struct Node** adjacencyLists;
+} Graph;
 
-typedef struct s 
+typedef struct Stack
 {
-	int t; 
-	int scap; 
-	int* arr; 
-} STK;
+    int nTopIndex;
+    int capacity;
+    int* elements;
+} Stack;
 
-NODE* create_node(int v) 
+Node* create_node(int value)
 {
-	NODE* nn = malloc(sizeof(NODE));
-	nn->data = v;
-	nn->next = NULL;
-	return nn;
+    Node* pNewNode = malloc(sizeof(Node));
+    pNewNode->data = value;
+    pNewNode->next = NULL;
+    return pNewNode;
 }
 
-void add_edge(GPH* g, int src, int dest)
+void add_edge(Graph* graph, int src, int dest)
 {
-	NODE* nn = create_node(dest);
-	nn->next = g->alst[src];
-	g->alst[src] = nn;
-	nn = create_node(src);
-	nn->next = g->alst[dest];
-	g->alst[dest] = nn;
+    Node* pNewNode = create_node(dest);
+    pNewNode->next = graph->adjacencyLists[src];
+    graph->adjacencyLists[src] = pNewNode;
+    pNewNode = create_node(src);
+    pNewNode->next = graph->adjacencyLists[dest];
+    graph->adjacencyLists[dest] = pNewNode;
 }
 
-GPH* create_g(int v)
+Graph* create_graph(int nNumVertices)
 {
-	GPH* g = malloc(sizeof(GPH));
-	g->v = v;
-	g->alst = malloc(sizeof(NODE*));
-	g->vis = malloc(sizeof(int) * v);
+    Graph* graph = malloc(sizeof(Graph));
+    graph->nNumVertices = nNumVertices;
+    graph->adjacencyLists = malloc(sizeof(Node*) * nNumVertices);
+    graph->visited = malloc(sizeof(int) * nNumVertices);
 
-	for (int i = 0; i < v; i++)
-	{
-		g->alst[i] = NULL;
-		g->vis[i] = 0;
-	}
-	return g;
+    for (int i = 0; i < nNumVertices; i++)
+    {
+        graph->adjacencyLists[i] = NULL;
+        graph->visited[i] = 0;
+    }
+    return graph;
 }
 
-STK* create_s(int scap)
+Stack* create_stack(int capacity)
 {
-	STK* s = malloc(sizeof(STK));
-	s->arr = malloc(scap * sizeof(int));
-	s->t = -1;
-	s->scap = scap;
+    Stack* stack = malloc(sizeof(Stack));
+    stack->elements = malloc(capacity * sizeof(int));
+    stack->nTopIndex = -1;
+    stack->capacity = capacity;
 
-	return s;
+    return stack;
 }
 
-void push(int pshd, STK* s)
+void push(int item, Stack* stack)
 {
-	s->t = s->t + 1;
-	s->arr[s->t] = pshd;
+    stack->nTopIndex++;
+    stack->elements[stack->nTopIndex] = item;
 }
 
-void DFS(GPH* g, STK* s, int v_nr)
+void DFS(Graph* graph, Stack* stack, int nVertexNumber)
 {
-	NODE* adj_list = g->alst[v_nr];
-	NODE* aux = adj_list;
-	g->vis[v_nr] = 1;
-	printf("%d ", v_nr);
-	push(v_nr, s);
-	while (aux != NULL) 
-	{
-		int con_ver = aux->data;
+    Node* pAdjList = graph->adjacencyLists[nVertexNumber];
+    Node* pCurrNode = pAdjList;
+    graph->visited[nVertexNumber] = 1;
+    printf("%d ", nVertexNumber);
+    //push(nVertexNumber, stack);
+    while (pCurrNode != NULL)
+    {
+        int nVertexIndex = pCurrNode->data;
 
-		if (g->vis[con_ver] == 0)
-			DFS(g, s, con_ver);
-		aux = aux->next;
-	}
+        if (graph->visited[nVertexIndex] == 0)
+            DFS(graph, stack, nVertexIndex);
+        pCurrNode = pCurrNode->next;
+    }
 }
 
-void insert_edges(GPH* g, int edg_nr, int nrv)
+void insert_edges(Graph* graph, int nNumEdges, int nNumVertices)
 {
-	int src, dest, i;
-	printf("adauga %d munchii (de la 1 la %d)\n", edg_nr, nrv);
-	for (i = 0; i < edg_nr; i++)
-	{
-		scanf("%d%d", &src, &dest);
-		add_edge(g, src, dest);
-	}
+    int src, dest;
+    printf("Enter %d edges (from 0 to %d):\n", nNumEdges, nNumVertices);
+    for (int i = 0; i < nNumEdges; i++)
+    {
+        scanf("%d%d", &src, &dest);
+        add_edge(graph, src, dest);
+    }
 }
 
-void wipe(GPH* g, int nrv)
+void reset_visited(Graph* graph, int nNumVertices)
 {
-	for (int i = 0; i < nrv; i++)
-	{
-		g->vis[i] = 0;
-	}
+    for (int i = 0; i < nNumVertices; i++)
+    {
+        graph->visited[i] = 0;
+    }
 }
 
-void canbe(GPH* g, int nrv, STK* s1, STK* s2)// 0 sau 1 daca poate fi sau nu ajuns
+void determine_paths(Graph* graph, int nNumVertices, Stack* stack1, Stack* stack2)
 {
-	int* canbe = calloc(5, sizeof(int));
+    int* possible_paths = calloc(5, sizeof(int));
 
-	for (int i = 0; i < nrv; i++) // aici i tine loc de numar adica de restaurant
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			DFS(g, s1, i);
-			wipe(g, nrv);
-			DFS(g, s2, j);
-			for (int j = 0; j < nrv; j++)
-				for (int i = 0; i < nrv; i++)
-					*canbe = 1;
-		}
-	}
+    for (int i = 0; i < nNumVertices; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            DFS(graph, stack1, i);
+            reset_visited(graph, nNumVertices);
+            DFS(graph, stack2, j);
+
+            for (int j = 0; j < nNumVertices; j++)
+                for (int i = 0; i < nNumVertices; i++)
+                    *possible_paths = 1;
+        }
+    }
 }
-
 
 int main()
 {
+    int nNumVertices;
+    int nNumEdges;
 
-	int nrv;
-	int edg_nr;
-	int ans;
+    printf("Enter the number of vertices in the graph: ");
+    scanf("%d", &nNumVertices);
 
-	printf("cate noduri are girafa?");
-	scanf("%d", &nrv);
+    printf("Enter the number of edges in the graph: ");
+    scanf("%d", &nNumEdges);
 
-	printf("cate muchii are giraful?");
-	scanf("%d", &edg_nr);
+    Graph* graph = create_graph(nNumVertices);
 
-	GPH* g = create_g(nrv);
+    Stack* stack1 = create_stack(2 * nNumVertices);
+    Stack* stack2 = create_stack(2 * nNumVertices);
 
-	STK* s1 = create_s(2 * nrv);
-	STK* s2 = create_s(2 * nrv);
+    insert_edges(graph, nNumEdges, nNumVertices);
+    DFS(graph, stack1, 0);
+    //determine_paths(graph, nNumVertices, stack1, stack2);
 
-	insert_edges(g, edg_nr, nrv);
+    // Free allocated memory
+    // (Not shown in the code for brevity)
 
-	canbe(g, nrv, s1, s2);
+    return 0;
 }
